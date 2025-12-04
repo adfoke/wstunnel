@@ -69,15 +69,15 @@ The client will keep trying to connect to the server. If the connection drops, i
 
 ```bash
 # For Linux
-GOOS=linux GOARCH=amd64 go build -o wstunnel_linux main.go shell_nix.go
+GOOS=linux GOARCH=amd64 go build -o wstunnel_linux .
 
 # For macOS
-GOOS=darwin GOARCH=amd64 go build -o wstunnel_mac main.go shell_nix.go
+GOOS=darwin GOARCH=amd64 go build -o wstunnel_mac .
 ```
 *Note: Since `shell_nix.go` has `//go:build !windows`, standard `go build` on non-Windows systems works automatically.*
 
 ```bash
-go build -o wstunnel main.go
+go build -o wstunnel .
 ```
 
 ### 2. Compile for Windows (Client)
@@ -86,8 +86,8 @@ To hide the console window on the target machine, use `-H=windowsgui`. It is rec
 
 ```bash
 # Standard build
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o wstunnel.exe main.go shell_win.go
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o wstunnel.exe .
 
 # Stealth build (Hidden Window)
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -H=windowsgui" -o wstunnel.exe main.go shell_win.go
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -H=windowsgui" -o wstunnel.exe .
 ```
