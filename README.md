@@ -59,6 +59,15 @@ Run the client on the target machine to connect back to the server.
 
 The client will keep trying to connect to the server. If the connection drops, it will retry every 5 seconds.
 
+## Build Mechanism
+
+This project uses Go build tags to select the appropriate shell implementation based on the target operating system:
+
+- **Linux/macOS**: `shell_nix.go` is selected (via `//go:build !windows`). It uses `github.com/creack/pty` to spawn a pseudo-terminal, providing a fully interactive shell experience (handling TTY, signals, etc.).
+- **Windows**: `shell_win.go` is selected (via `//go:build windows`). It uses `os/exec` to spawn `cmd.exe` and pipes stdin/stdout/stderr directly.
+
+When you run `go build`, the Go compiler automatically includes the correct file based on the `GOOS` environment variable.
+
 ## Compilation
 
 ### Prerequisites
